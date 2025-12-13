@@ -4,6 +4,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors; // Necesario para el refactor de delimitadores
 
 public class StringCalculator {
     
@@ -20,67 +21,43 @@ public class StringCalculator {
         }
     }
     
-    /**
-     * Procesa la cadena de entrada, calcula la suma y valida los números negativos.
-     */
+    // ==========================================================
+    // MÉTODO PRINCIPAL
+    // ==========================================================
+    
     public int add(String numbers) {
         // Caso 1: Cadena nula o vacía
         if (numbers == null || numbers.isEmpty()) {
             return 0;
         }
-        /*
-         // REFACTOR: Extraer la lógica de configuración del delimitador
+        
+        // 1. CONFIGURACIÓN: Obtiene el delimitador (coma, \n, o custom) y la cadena de números.
         DelimiterConfig config = getDelimiterConfig(numbers);
-        String regex = config.regex;
-        numbers = config.numbers;
+        String[] nums = splitNumbers(config.numbers, config.regex);
         
-        // Dividir usando el/los delimitadores
-        String[] nums = splitNumbers(numbers, regex);
-        
-        // Validar números negativos y sumar
+        // 2. PROCESAMIENTO: Recorre y suma los números, registrando negativos.
         StringBuilder negativeNumbers = new StringBuilder();
         int sum = 0;
         
         for (String num : nums) {
-            // Saltar cadenas vacías
-            if (num == null || num.trim().isEmpty()) {
-                continue;
-            }
-            
-            int currentNumber;
-            try {
-                currentNumber = Integer.parseInt(num.trim());
-            } catch (NumberFormatException e) {
-                // Si no es número, continuar
-                continue;
-            }
-            
-            // Verificar si es negativo (ITERACIÓN 7)
-            if (currentNumber < 0) {
-                if (negativeNumbers.length() > 0) {
-                    negativeNumbers.append(", ");
-                }
-                negativeNumbers.append(currentNumber);
-            }
-            
-            // Ignorar números mayores a 1000 (EXTRA)
-            if (currentNumber <= 1000) {
-                sum += currentNumber;
-            }
+            // Lógica delegada al método auxiliar para limpieza del loop
+            sum += processNumber(num, negativeNumbers);
         }
         
-        // Lanzar excepción si hay negativos
+        // 3. VALIDACIÓN: Lanza excepción si hay negativos.
         if (negativeNumbers.length() > 0) {
             throw new IllegalArgumentException("negativos no permitidos: " + negativeNumbers.toString());
         }
         
         return sum;
-      */
-        return Integer.parseInt(numbers);
     }
 
+    // ==========================================================
+    // MÉTODOS AUXILIARES (Refactorización)
+    // ==========================================================
+    
     /**
-     * Método auxiliar para extraer los delimitadores y la cadena de números.
+     * Extrae el patrón de delimitador (regex) y la parte de la cadena que contiene los números.
      */
     private DelimiterConfig getDelimiterConfig(String numbers) {
         // Detección de delimitador personalizado (//...)
@@ -102,13 +79,12 @@ public class StringCalculator {
                     }
                     
                     if (!delimiters.isEmpty()) {
-                        // Construir el regex final: Delim1|Delim2|Delim3
-                        StringBuilder sb = new StringBuilder();
-                        for (String delim : delimiters) {
-                            if (sb.length() > 0) sb.append("|");
-                            sb.append(Pattern.quote(delim));
-                        }
-                        String regex = sb.toString();
+                        // Construir el regex final: Delim1|Delim2|Delim3. 
+                        // Uso de Stream/Collectors para una construcción concisa del string.
+                        String regex = delimiters.stream()
+                            .map(Pattern::quote) // Escapar para regex
+                            .collect(Collectors.joining("|")); // Unir con OR lógico
+                        
                         String remainingNumbers = numbers.substring(delimiterEndIndex + 1);
                         return new DelimiterConfig(regex, remainingNumbers);
                     }
@@ -125,7 +101,44 @@ public class StringCalculator {
         // Configuración por defecto (coma o salto de línea)
         return new DelimiterConfig(",|\\n", numbers);
     }
+    
+    /**
+     * Procesa un solo número: lo suma si es <= 1000 y registra si es negativo.
+     * @param num La subcadena del número a procesar.
+     * @param negativeNumbers Builder para registrar los números negativos encontrados.
+     * @return El valor del número (o 0 si es inválido o > 1000).
+     */
+    private int processNumber(String num, StringBuilder negativeNumbers) {
+        if (num == null || num.trim().isEmpty()) {
+            return 0;
+        }
+        
+        int currentNumber;
+        try {
+            currentNumber = Integer.parseInt(num.trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+        
+        // Registrar Negativos
+        if (currentNumber < 0) {
+            if (negativeNumbers.length() > 0) {
+                negativeNumbers.append(", ");
+            }
+            negativeNumbers.append(currentNumber);
+        }
+        
+        // Regla de ignorar > 1000
+        if (currentNumber <= 1000) {
+            return currentNumber;
+        }
+        
+        return 0;
+    }
 
+    /**
+     * Wrapper simple para el método split.
+     */
     private String[] splitNumbers(String numbers, String regex) {
         if (numbers == null) {
             return new String[0];
