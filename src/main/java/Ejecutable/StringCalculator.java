@@ -4,12 +4,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.stream.Collectors; // Necesario para el refactor de delimitadores
 
 public class StringCalculator {
     
     /**
-     * Clase auxiliar (record) para retornar la configuración del delimitador y la cadena de números restante.
+     * Clase auxiliar (record) que encapsula el regex del delimitador y la cadena de números restante.
      */
     private static class DelimiterConfig {
         final String regex;
@@ -21,42 +21,36 @@ public class StringCalculator {
         }
     }
     
-    // ==========================================================
-    // MÉTODO PRINCIPAL (ORQUESTADOR)
-    // ==========================================================
-    
+   
     public int add(String numbers) {
-        // Caso 1: Cadena nula o vacía
+        // 1. Caso base: Cadena nula o vacía
         if (numbers == null || numbers.isEmpty()) {
             return 0;
         }
         
-        // 1. CONFIGURACIÓN: Obtiene el delimitador (incluye coma por defecto).
+        // 2. CONFIGURACIÓN: Obtiene el delimitador y la cadena de números (Refactor).
         DelimiterConfig config = getDelimiterConfig(numbers);
         
-        // Divide los números. Para "1,2", usa el regex por defecto ",|\n" y produce ["1", "2"].
+        // Divide los números usando el regex configurado.
         String[] nums = splitNumbers(config.numbers, config.regex);
         
-        // 2. PROCESAMIENTO: Recorre y suma los números.
+        // 3. PROCESAMIENTO: Recorre y suma los números.
         StringBuilder negativeNumbers = new StringBuilder();
         int sum = 0;
         
         for (String num : nums) {
+            // La lógica de suma, negativos e ignorar > 1000 está en el auxiliar (Refactor).
             sum += processNumber(num, negativeNumbers);
         }
         
-        // 3. VALIDACIÓN: Lanza excepción si hay negativos.
+        // 4. VALIDACIÓN FINAL: Lanza excepción si hay negativos.
         if (negativeNumbers.length() > 0) {
             throw new IllegalArgumentException("negativos no permitidos: " + negativeNumbers.toString());
         }
         
-        return sum; // Retorna 3 para el caso "1,2"
+        return sum;
     }
 
-    // ==========================================================
-    // MÉTODOS AUXILIARES
-    // ==========================================================
-    
     private DelimiterConfig getDelimiterConfig(String numbers) {
         if (numbers.startsWith("//")) {
             int delimiterEndIndex = numbers.indexOf("\n");
@@ -74,9 +68,10 @@ public class StringCalculator {
                     }
                     
                     if (!delimiters.isEmpty()) {
+                        // Construir el regex final: Delim1|Delim2|Delim3
                         String regex = delimiters.stream()
-                            .map(Pattern::quote)
-                            .collect(Collectors.joining("|"));
+                            .map(Pattern::quote) 
+                            .collect(Collectors.joining("|")); 
                         
                         String remainingNumbers = numbers.substring(delimiterEndIndex + 1);
                         return new DelimiterConfig(regex, remainingNumbers);
@@ -90,7 +85,7 @@ public class StringCalculator {
             }
         }
         
-        // Configuración por defecto: "," o "\n"
+        // Configuración por defecto (coma o salto de línea)
         return new DelimiterConfig(",|\\n", numbers);
     }
     
@@ -106,6 +101,7 @@ public class StringCalculator {
             return 0;
         }
         
+        // Registrar Negativos
         if (currentNumber < 0) {
             if (negativeNumbers.length() > 0) {
                 negativeNumbers.append(", ");
@@ -113,6 +109,7 @@ public class StringCalculator {
             negativeNumbers.append(currentNumber);
         }
         
+        // Regla de ignorar > 1000
         if (currentNumber <= 1000) {
             return currentNumber;
         }
