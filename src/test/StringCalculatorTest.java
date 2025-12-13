@@ -1,6 +1,21 @@
-// Tests moved to src/test/java/Ejecutable
+package Ejecutable;
 
-    // Tests moved to src/test/java/Ejecutable
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+public class StringCalculatorTest {
+    
+    private StringCalculator calculator;
+
+    @BeforeEach
+    void setUp() {
+        // Inicializa la calculadora antes de cada prueba
+        calculator = new StringCalculator();
+    }
     
     // ========== ITERACIÓN 1: Cadena vacía ==========
     @Test
@@ -38,12 +53,29 @@
         assertEquals(15, calculator.add("1,2\n3,4\n5"));
     }
     
-    // ========== ITERACIÓN 6: Delimitador personalizado ==========
+    // ========== ITERACIÓN 6: Delimitador personalizado (Simple) ==========
     @Test
     public void testCustomDelimiter() {
         assertEquals(3, calculator.add("//;\n1;2"));
         assertEquals(6, calculator.add("//|\n1|2|3"));
         assertEquals(7, calculator.add("//sep\n1sep2sep4"));
+    }
+
+    // ========== EXTRA: Delimitador personalizado con corchetes simples ==========
+    @Test
+    public void testCustomDelimiterWithSingleCharacterBrackets() {
+        assertEquals(6, calculator.add("//[*]\n1*2*3")); 
+        assertEquals(10, calculator.add("//[#]\n4#6"));
+    }
+    
+    // ========== EXTRA: Múltiples delimitadores personalizados ==========
+    @Test
+    public void testMultipleCustomDelimiters() {
+        // Delimitadores: * y %
+        assertEquals(6, calculator.add("//[*][%]\n1*2%3")); 
+        
+        // Delimitadores de varios caracteres: [sep] y [||]
+        assertEquals(10, calculator.add("//[sep][||]\n4sep3||3")); 
     }
     
     // ========== ITERACIÓN 7: Números negativos ==========
